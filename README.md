@@ -70,4 +70,4 @@ Please report compatibility for other devices.
 
 ## Donation
 
-- [SociaBuzz](https://sociabuzz.com/
+- [SociaBuzz](https://sociabuzz.com/dikyganteng_/tribe)
