@@ -68,6 +68,6 @@ Please report compatibility for other devices.
 
 ---
 
-## Donation
+## Donation or Support Me
 
 - [SociaBuzz](https://sociabuzz.com/dikyganteng_/tribe)
