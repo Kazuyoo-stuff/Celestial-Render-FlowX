@@ -64,7 +64,7 @@ Please report compatibility for other devices.
 
 - @Bias_khaliq for source [ dark gpu rendering, tweak GPU DDR temperature, optimization gpu mali & additional gpu setting mediatek ]
 
-- Matt Yang for source GPU freqv2 & change task cgroup nice
+- Matt Yang for source [ GPU freqv2 & change task cgroup nice ]
 
 ---
 
