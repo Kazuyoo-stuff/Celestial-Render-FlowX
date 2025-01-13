@@ -21,7 +21,7 @@ Contains various Tweaks and Optimizations aimed at Improving the overall user Ex
 
 ## Screenshot
 
-![LOGO](https://github.com/Kazuyoo-stuff/Celestial-Render-FlowX/blob/8c1a8b57cab057cd5717f31577a015103a2fb3bc/image/Screenshot_2025-01-13-18-52-27-259_io.github.huskydg.magisk.jpg) ![LOGO]()
+![LOGO](https://github.com/Kazuyoo-stuff/Celestial-Render-FlowX/blob/8c1a8b57cab057cd5717f31577a015103a2fb3bc/image/Screenshot_2025-01-13-18-52-27-259_io.github.huskydg.magisk.jpg)
 
 ---
 
