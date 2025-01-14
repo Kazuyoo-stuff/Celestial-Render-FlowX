@@ -270,7 +270,6 @@ main() {
     optimize_platform_gpu
     optimize_task_cgroup_nice
     cleanup_memory
-    nohup sh $MODDIR/system/bin/preload_gpu
 }
 
 # Main Execution & Exit script successfully
