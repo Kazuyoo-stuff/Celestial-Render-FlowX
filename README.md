@@ -34,7 +34,6 @@ Improved Rendering Speed, Graphics Performance, Device Power Efficiency, cache m
 - Additional Prop Vendor Perf
 - Optimize Surface Flinger
 - Enable Hwc Gpu Perf Mode
-- Preload Gpu [ Render & Gpu@ ]
 - Fstrim All partitions
 - Delete Trash & Logs
 - Other settings
