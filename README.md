@@ -16,14 +16,14 @@ Improved Rendering Speed, Graphics Performance, Device Power Efficiency, cache m
 ```
 - Adjust Gpu Temperature [ GPU & DDR ]
 - Optimize GED Parameter
-- Optimize GpuFreq & GpuFreqV2
-- Optimize Power VR Settings
-- Optimize Power VR Apphint
-- Optimize KGSL Settings
+- Optimize GpuFreq & GpuFreqV2 Parameter
+- Optimize Power VR Settings Parameter
+- Optimize Power VR Apphint Parameter
+- Optimize KGSL Parameter
 - Optimize Kernel Ged / Enable gpu boost <2>
-- Optimize Kernel Fpsgo Settings
-- Optimize Mali Driver
-- Optimize Platform GPU
+- Optimize Kernel Fpsgo Parameter
+- Optimize Mali Driver Parameter
+- Optimize Platform GPU Parameter
 - Optimize Change Task CGROUP & NICE
 - Cleanup Memory [ /proc/sys/vm/drop_caches "3" ]
 - Disable Force 4X MSAA
