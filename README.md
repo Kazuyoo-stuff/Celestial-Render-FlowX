@@ -14,6 +14,7 @@ Improved Rendering Speed, Graphics Performance, Device Power Efficiency, cache m
 ## Features
 
 ```
+- Dark Gpu Render [ Adreno, Mali, PowerVR ]
 - Adjust Gpu Temperature [ GPU & DDR ]
 - Optimize GED Parameter
 - Optimize GpuFreq & GpuFreqV2 Parameter
