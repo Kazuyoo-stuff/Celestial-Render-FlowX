@@ -4,7 +4,6 @@
 # and module is placed.
 # This will make sure your module will still work
 # if Magisk change its mount point in the future
-# made by Kzyoo | Kazuyoo-stuff
 MODDIR=${0%/*}
 
 # ----------------- VARIABLES -----------------
@@ -15,6 +14,8 @@ GPU_FREQ_PATHV2="/proc/gpufreqv2"
 PVR_PATH="/sys/module/pvrsrvkm/parameters"
 PVR_APPHINT_PATH="/sys/kernel/debug/pvr/apphint"
 KGSL_PARAMS_PATH="/sys/class/kgsl/kgsl-3d0"
+KGSL_PARAMS_PATH2="/sys/kernel/debug/kgsl/kgsl-3d0/profiling"
+ADRENO_PARAMS_PATH="/sys/module/adreno_idler/parameters"
 KERNEL_GED_PATH="/sys/kernel/debug/ged/hal"
 KERNEL_FPSGO_PATH="/sys/kernel/debug/fpsgo/common"
 MALI_PATH="/proc/mali"
@@ -32,7 +33,18 @@ wait_until_boot_completed() {
     while [ ! -d "/sdcard/Android" ]; do sleep 1; done
 }
 
-write_value() {
+lock_val() {
+    for p in $2; do
+        if [ -f "$p" ]; then
+            chown root:root "$p"
+            chmod 0666 "$p"
+            echo "$1" >"$p"
+            chmod 0444 "$p"
+        fi
+    done
+}
+
+write_val() {
     local file="$1"
     local value="$2"
     if [ -e "$file" ]; then
@@ -86,141 +98,129 @@ optimize_gpu_temperature() {
 optimize_ged_parameters() {
     # Optimize GPU parameters via GED driver
     if [ -d "$GPU_PARAMS_PATH" ]; then
-        write_value "$GPU_PARAMS_PATH/gpu_cust_boost_freq" "2000000"
-        write_value "$GPU_PARAMS_PATH/gpu_cust_upbound_freq" "2000000" 
-        write_value "$GPU_PARAMS_PATH/ged_smart_boost" "1000"
-        write_value "$GPU_PARAMS_PATH/gpu_bottom_freq" "800000"
-        write_value "$GPU_PARAMS_PATH/boost_upper_bound" "100"
-        write_value "$GPU_PARAMS_PATH/gx_dfps" "$(dumpsys display | grep -oE 'fps=[0-9]+' | awk -F '=' '{print $2}' | head -n 1)"
-        write_value "$GPU_PARAMS_PATH/g_gpu_timer_based_emu" "1"
-        write_value "$GPU_PARAMS_PATH/boost_gpu_enable" "1"
-        write_value "$GPU_PARAMS_PATH/ged_boost_enable" "1"
-        write_value "$GPU_PARAMS_PATH/enable_gpu_boost" "1"
-        write_value "$GPU_PARAMS_PATH/gx_game_mode" "1"
-        write_value "$GPU_PARAMS_PATH/gx_boost_on" "1"
-        write_value "$GPU_PARAMS_PATH/boost_amp" "1"
-        write_value "$GPU_PARAMS_PATH/gx_3D_benchmark_on" "1"
-        write_value "$GPU_PARAMS_PATH/is_GED_KPI_enabled" "1"
-        write_value "$GPU_PARAMS_PATH/gpu_dvfs_enable" "1"
-        write_value "$GPU_PARAMS_PATH/ged_monitor_3D_fence_disable" "0"
-        write_value "$GPU_PARAMS_PATH/ged_monitor_3D_fence_debug" "0"
-        write_value "$GPU_PARAMS_PATH/ged_log_perf_trace_enable" "0"
-        write_value "$GPU_PARAMS_PATH/ged_log_trace_enable" "0"
-        write_value "$GPU_PARAMS_PATH/ged_monitor_3D_fence_debug" "0"
-        write_value "$GPU_PARAMS_PATH/gpu_bw_err_debug" "0"
-        write_value "$GPU_PARAMS_PATH/gx_frc_mode" "0"
-        write_value "$GPU_PARAMS_PATH/gpu_idle" "0"
-        write_value "$GPU_PARAMS_PATH/gpu_debug_enable" "0"
+        write_val "$GPU_PARAMS_PATH/gpu_cust_boost_freq" "2000000"
+        write_val "$GPU_PARAMS_PATH/gpu_cust_upbound_freq" "2000000" 
+        write_val "$GPU_PARAMS_PATH/ged_smart_boost" "1000"
+        write_val "$GPU_PARAMS_PATH/gpu_bottom_freq" "800000"
+        write_val "$GPU_PARAMS_PATH/boost_upper_bound" "100"
+        write_val "$GPU_PARAMS_PATH/gx_dfps" "$(dumpsys display | grep -oE 'fps=[0-9]+' | awk -F '=' '{print $2}' | head -n 1)"
+        write_val "$GPU_PARAMS_PATH/g_gpu_timer_based_emu" "1"
+        write_val "$GPU_PARAMS_PATH/boost_gpu_enable" "1"
+        write_val "$GPU_PARAMS_PATH/ged_boost_enable" "1"
+        write_val "$GPU_PARAMS_PATH/enable_gpu_boost" "1"
+        write_val "$GPU_PARAMS_PATH/gx_game_mode" "1"
+        write_val "$GPU_PARAMS_PATH/gx_boost_on" "1"
+        write_val "$GPU_PARAMS_PATH/boost_amp" "1"
+        write_val "$GPU_PARAMS_PATH/gx_3D_benchmark_on" "1"
+        write_val "$GPU_PARAMS_PATH/is_GED_KPI_enabled" "1"
+        write_val "$GPU_PARAMS_PATH/gpu_dvfs_enable" "1"
+        write_val "$GPU_PARAMS_PATH/ged_monitor_3D_fence_disable" "0"
+        write_val "$GPU_PARAMS_PATH/ged_monitor_3D_fence_debug" "0"
+        write_val "$GPU_PARAMS_PATH/ged_log_perf_trace_enable" "0"
+        write_val "$GPU_PARAMS_PATH/ged_log_trace_enable" "0"
+        write_val "$GPU_PARAMS_PATH/ged_monitor_3D_fence_debug" "0"
+        write_val "$GPU_PARAMS_PATH/gpu_bw_err_debug" "0"
+        write_val "$GPU_PARAMS_PATH/gx_frc_mode" "0"
+        write_val "$GPU_PARAMS_PATH/gpu_idle" "0"
+        write_val "$GPU_PARAMS_PATH/gpu_debug_enable" "0"
     fi
 }
 
 optimize_gpu_frequency() {
     # Optimize GPU frequency configurations
     if [ -d "$GPU_FREQ_PATH" ]; then
-        write_value "$GPU_FREQ_PATH/gpufreq_limited_thermal_ignore"
-        write_value "$GPU_FREQ_PATH/gpufreq_limited_oc_ignore"
-        write_value "$GPU_FREQ_PATH/gpufreq_limited_low_batt_volume_ignore" "1"
-        write_value "$GPU_FREQ_PATH/gpufreq_limited_low_batt_volt_ignore" "1"
-        write_value "$GPU_FREQ_PATH/gpufreq_limit_table" "1 1 1"
-        write_value "$GPU_FREQ_PATH/gpufreq_opp_freq" "0"
-        write_value "$GPU_FREQ_PATH/gpufreq_fixed_freq_volt" "0"
-        write_value "$GPU_FREQ_PATH/gpufreq_opp_stress_test" "0"
-        write_value "$GPU_FREQ_PATH/gpufreq_power_dump" "0"
-        write_value "$GPU_FREQ_PATH/gpufreq_power_limited" "0"
+        write_val "$GPU_FREQ_PATH/gpufreq_limited_thermal_ignore" "1"
+        write_val "$GPU_FREQ_PATH/gpufreq_limited_oc_ignore" "1"
+        write_val "$GPU_FREQ_PATH/gpufreq_limited_low_batt_volume_ignore" "1"
+        write_val "$GPU_FREQ_PATH/gpufreq_limited_low_batt_volt_ignore" "1"
+        write_val "$GPU_FREQ_PATH/gpufreq_opp_freq" "0"
+        write_val "$GPU_FREQ_PATH/gpufreq_fixed_freq_volt" "0"
+        write_val "$GPU_FREQ_PATH/gpufreq_opp_stress_test" "0"
+        write_val "$GPU_FREQ_PATH/gpufreq_power_dump" "0"
+        write_val "$GPU_FREQ_PATH/gpufreq_power_limited" "0"
     fi
 }
 
 optimize_gpu_frequencyv2() {
     # Optimize GPU frequency v2 configurations (Matt Yang)（吟惋兮改)
     if [ -d "$GPU_FREQ_PATHV2" ]; then
-        write_value "$GPU_FREQ_PATHV2/aging_mode" "disable"
+        lock_val "$GPU_FREQ_PATHV2/aging_mode" "disable"
         for i in $(seq 0 10); do
-            write_value "$GPU_FREQ_PATHV2/limit_table" "$i 0 0"
+            lock_val "$GPU_FREQ_PATHV2/limit_table" "$i 0 0"
         done
-        for i in $(seq 0 9); do
-            write_value "$GPU_FREQ_PATHV2/limit_table" "$i 0 0"
-        done
-        for i in $(seq 0 8); do
-            write_value "$GPU_FREQ_PATHV2/limit_table" "$i 0 0"
-        done
-        write_value "$GPU_FREQ_PATHV2/limit_table" "1 1 1"
-        write_value "$GPU_FREQ_PATHV2/limit_table" "3 1 1"
+        lock_val "$GPU_FREQ_PATHV2/limit_table" "1 1 1"
     fi
 }
 
 optimize_pvr_settings() {
     # Adjust PowerVR settings for performance
     if [ -d "$PVR_PATH" ]; then
-        write_value "$PVR_PATH/gpu_power" "2"
-        write_value "$PVR_PATH/HTBufferSizeInKB" "256"
-        write_value "$PVR_PATH/DisableClockGating" "0"
-        write_value "$PVR_PATH/EmuMaxFreq" "2"
-        write_value "$PVR_PATH/EnableFWContextSwitch" "1"
-        write_value "$PVR_PATH/gPVRDebugLevel" "0"
-        write_value "$PVR_PATH/gpu_dvfs_enable" "1"
+        write_val "$PVR_PATH/gpu_power" "2"
+        write_val "$PVR_PATH/HTBufferSizeInKB" "256"
+        write_val "$PVR_PATH/DisableClockGating" "0"
+        write_val "$PVR_PATH/EmuMaxFreq" "2"
+        write_val "$PVR_PATH/EnableFWContextSwitch" "1"
+        write_val "$PVR_PATH/gPVRDebugLevel" "0"
+        write_val "$PVR_PATH/gpu_dvfs_enable" "1"
     fi
 }
 
 optimize_pvr_apphint() {
     # Additional settings power vr apphint
     if [ -d "$PVR_APPHINT_PATH" ]; then
-        write_value "$PVR_APPHINT_PATH/CacheOpConfig" "1"
-        write_value "$PVR_APPHINT_PATH/CacheOpUMKMThresholdSize" "512"
-        write_value "$PVR_APPHINT_PATH/EnableFTraceGPU" "0"
-        write_value "$PVR_APPHINT_PATH/HTBOperationMode" "2"
-        write_value "$PVR_APPHINT_PATH/TimeCorrClock" "1"
-        write_value "$PVR_APPHINT_PATH/0/DisableFEDLogging" "0"
-        write_value "$PVR_APPHINT_PATH/0/EnableAPM" "0"
+        write_val "$PVR_APPHINT_PATH/CacheOpConfig" "1"
+        write_val "$PVR_APPHINT_PATH/CacheOpUMKMThresholdSize" "512"
+        write_val "$PVR_APPHINT_PATH/EnableFTraceGPU" "0"
+        write_val "$PVR_APPHINT_PATH/HTBOperationMode" "2"
+        write_val "$PVR_APPHINT_PATH/TimeCorrClock" "1"
+        write_val "$PVR_APPHINT_PATH/0/DisableFEDLogging" "0"
+        write_val "$PVR_APPHINT_PATH/0/EnableAPM" "0"
     fi
 }
 
 optimize_kgsl_settings() {
     # Additional kgsl settings to stabilize the gpu
     if [ -d "$KGSL_PARAMS_PATH" ]; then
-        write_value "$KGSL_PARAMS_PATH/max_pwrlevel" "0"
-        write_value "$KGSL_PARAMS_PATH/adrenoboost" "0"
-        write_value "$KGSL_PARAMS_PATH/adreno_idler_active" "N"
-        write_value "$KGSL_PARAMS_PATH/throttling" "0"
-        write_value "$KGSL_PARAMS_PATH/perfcounter" "0"
-        write_value "$KGSL_PARAMS_PATH/bus_split" "0"
-        write_value "$KGSL_PARAMS_PATH/thermal_pwrlevel" "0"
-        write_value "$KGSL_PARAMS_PATH/force_clk_on" "0"
-        write_value "$KGSL_PARAMS_PATH/force_bus_on" "0"
-        write_value "$KGSL_PARAMS_PATH/force_rail_on" "0"
-        write_value "$KGSL_PARAMS_PATH/force_no_nap" "1"
-        write_value "$KGSL_PARAMS_PATH/idle_timer" "80"
-        write_value "$KGSL_PARAMS_PATH/pmqos_active_latency" "1000"
+        write_val "$KGSL_PARAMS_PATH/max_pwrlevel" "6"
+        write_val "$KGSL_PARAMS_PATH/throttling" "0"
+        write_val "$KGSL_PARAMS_PATH/force_clk_on" "1"
+        write_val "$KGSL_PARAMS_PATH/force_bus_on" "1"
+        write_val "$KGSL_PARAMS_PATH/force_rail_on" "1"
+        write_val "$KGSL_PARAMS_PATH/force_no_nap" "1"
+        write_val "$KGSL_PARAMS_PATH/idle_timer" "50"
+        write_val "$KGSL_PARAMS_PATH/pmqos_active_latency" "500"
+        write_val "$KGSL_PARAMS_PATH/thermal_pwrlevel" "0"
     fi
 }
 
 optimize_kernel_ged_settings() {
     # Additional kernel-ged GPU optimizations
     if [ -d "$KERNEL_GED_PATH" ]; then
-         write_value "$KERNEL_GED_PATH/gpu_boost_level" "2"
+         write_val "$KERNEL_GED_PATH/gpu_boost_level" "2"
     fi
 }
 
 optimize_kernel_fpsgo_settings() {
     # Additional kernel-fpsgo GPU optimizations
     if [ -d "$KERNEL_FPSGO_PATH" ]; then
-        write_value "$KERNEL_FPSGO_PATH/gpu_block_boost" "100 120 0"
+        write_val "$KERNEL_FPSGO_PATH/gpu_block_boost" "100 120 0"
     fi
 }
 
 optimize_mali_driver() {
     # Mali GPU-specific optimizations ( @Bias_khaliq )
     if [ -d "$MALI_PATH" ]; then
-         write_value "$MALI_PATH/dvfs_enable" "1"
-         write_value "$MALI_PATH/max_clock" "550000"
-         write_value "$MALI_PATH/min_clock" "100000"
+         write_val "$MALI_PATH/dvfs_enable" "1"
+         write_val "$MALI_PATH/max_clock" "550000"
+         write_val "$MALI_PATH/min_clock" "100000"
     fi
 }
 
 optimize_platform_gpu() {
     # Additional GPU settings for MediaTek ( @Bias_khaliq )
     if [ -d "$PLATFORM_GPU_PATH" ]; then
-         write_value "$PLATFORM_GPU_PATH/dvfs_enable" "1"
-         write_value "$PLATFORM_GPU_PATH/gpu_busy" "1"
+         write_val "$PLATFORM_GPU_PATH/dvfs_enable" "1"
+         write_val "$PLATFORM_GPU_PATH/gpu_busy" "1"
     fi
 }
 
@@ -238,20 +238,45 @@ optimize_task_cgroup_nice() {
 }
 
 final_optimize_gpu() {
+  # Loop over each GPU in the system
+  for gpu in /sys/kernel/gpu/; do
+	# Fetch the available governors from the GPU
+	avail_govs="$(cat "$gpu/gpu_available_governor")"
+
+	# Attempt to set the governor in this order
+	for governor in msm-adreno-tz userspace powersave performance; do
+	  # Once a matching governor is found, set it and break for this GPU
+      if [[ "$avail_govs" == *"$governor"* ]]; then
+        write_val "$gpu/gpu_governor" "$governor"
+		break
+      fi
+	done
+  done
+  
     # disable pvr tracing
     for pvrtracing in $(find /sys/kernel/debug/tracing/events/pvr_fence -name 'enable'); do
         if [ -d "/sys/kernel/debug/tracing/events/pvr_fence" ]; then
-            write_value "$pvrtracing" "0"
+            write_val "$pvrtracing" "0"
         fi
     done
     
-    write_value "$GPUFREQ_TRACING_PATH/enable" "0"
+    # disable gpu tracing for mtk
+    write_val "$GPUFREQ_TRACING_PATH/enable" "0"
+   
+    # disable kgsl profiling
+    write_val "$KGSL_PARAMS_PATH2/enable" "0"
+    
+    # disable adreno idler
+    write_val "$ADRENO_PARAMS_PATH/adreno_idler_active" "0"
+    
+   # Disable auto voltage scaling for mtk
+    lock_val "0" "$GPU_FREQ_PATH/gpufreq_aging_enable"
 }
 
 cleanup_memory() {
     # Clean up memory and cache
-     write_value "/proc/sys/vm/drop_caches" "3"
-     write_value "/proc/sys/vm/compact_memory" "1"
+     write_val "/proc/sys/vm/drop_caches" "3"
+     write_val "/proc/sys/vm/compact_memory" "1"
 }
 
 # ----------------- MAIN EXECUTION -----------------
