@@ -9,7 +9,7 @@ REPLACE="
 
 # array / variabel
 NAME="Celestial-Render-FlowX | Kzyo"
-VERSION="1.1S"
+VERSION="1.2S"
 ANDROIDVERSION=$(getprop ro.build.version.release)
 DATE="Mon 11 Nov 2024"
 DEVICES=$(getprop ro.product.board)
@@ -26,10 +26,6 @@ trim_partition () {
     sleep 0.1
     fstrim -v /cache
     sleep 0.1
-    fstrim -v /system
-    sleep 0.1
-    fstrim -v /vendor
-    sleep 0.1
     fstrim -v /metadata
     sleep 0.1
     fstrim -v /odm
@@ -37,11 +33,12 @@ trim_partition () {
     fstrim -v /system_ext
     sleep 0.1
     fstrim -v /product
-    sleep 0.1
-    fstrim -v /data
-    sleep 0.1
-    fstrim -v /cache
-    sleep 0.1
+}
+
+cleanup_gpu() {
+for i in "$(find /data -type f -name '*shader*')"; do
+    rm -f $i
+done
 }
 
 # delete trash & log by @Bias_khaliq
@@ -103,6 +100,9 @@ trim_partition &>/dev/null
 sleep 0.5
 ui_print "- Delete trash and logs"
 delete_trash_logs
+sleep 0.5
+ui_print "- Clean Gpu Shader"
+cleanup_gpu &>/dev/null
 
 # Set permissions
 set_perm_recursive $MODPATH 0 0 0755 0644
