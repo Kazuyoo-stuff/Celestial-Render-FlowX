@@ -33,6 +33,18 @@ wait_until_boot_completed() {
     while [ ! -d "/sdcard/Android" ]; do sleep 1; done
 }
 
+mask_val() {
+    touch /data/local/tmp/mount_mask
+    for p in $2; do
+        if [ -f "$p" ]; then
+            umount "$p"
+            chmod 0666 "$p"
+            echo "$1" >"$p"
+            mount --bind /data/local/tmp/mount_mask "$p"
+        fi
+    done
+}
+
 lock_val() {
     for p in $2; do
         if [ -f "$p" ]; then
@@ -84,7 +96,7 @@ send_notification() {
 optimize_gpu_temperature() {
     # Adjust GPU and DDR temperature thresholds ( @Bias_khaliq )
     for THERMAL in /sys/class/thermal/thermal_zone*/type; do
-        if grep -E "gpu|ddr" "$THERMAL" >/dev/null; then
+        if grep -E "gpu|ddr" "$THERMAL" > /dev/null; then
           for ZONE in "${THERMAL%/*}"/trip_point_*_temp; do
             CURRENT_TEMP=$(cat "$ZONE")
             if [ "$CURRENT_TEMP" -lt "90000" ]; then
@@ -128,13 +140,18 @@ optimize_ged_parameters() {
 
 optimize_gpu_frequency() {
     # Optimize GPU frequency configurations
+    gpu_freq="$(cat $GPU_FREQ_PATH/gpufreq_opp_dump | grep -o 'freq = [0-9]*' | sed 's/freq = //' | sort -nr | head -n 1)"
     if [ -d "$GPU_FREQ_PATH" ]; then
+        for i in $(seq 0 8); do
+            lock_val "$i 0 0" "$GPU_FREQ_PATH/limit_table"
+        done
+        lock_val "$GPU_FREQ_PATH/limit_table" "1 1 1"
         write_val "$GPU_FREQ_PATH/gpufreq_limited_thermal_ignore" "1"
         write_val "$GPU_FREQ_PATH/gpufreq_limited_oc_ignore" "1"
         write_val "$GPU_FREQ_PATH/gpufreq_limited_low_batt_volume_ignore" "1"
         write_val "$GPU_FREQ_PATH/gpufreq_limited_low_batt_volt_ignore" "1"
-        write_val "$GPU_FREQ_PATH/gpufreq_opp_freq" "0"
         write_val "$GPU_FREQ_PATH/gpufreq_fixed_freq_volt" "0"
+        write_val "$GPU_FREQ_PATH/gpufreq_opp_freq" "$gpu_freq"
         write_val "$GPU_FREQ_PATH/gpufreq_opp_stress_test" "0"
         write_val "$GPU_FREQ_PATH/gpufreq_power_dump" "0"
         write_val "$GPU_FREQ_PATH/gpufreq_power_limited" "0"
@@ -143,12 +160,15 @@ optimize_gpu_frequency() {
 
 optimize_gpu_frequencyv2() {
     # Optimize GPU frequency v2 configurations (Matt Yang)（吟惋兮改)
+    gpu_freq="$(cat $GPU_FREQ_PATHV2/gpu_working_opp_table | awk '{print $3}' | sed 's/,//g' | sort -nr | head -n 1)"
+	gpu_volt="$(cat $GPU_FREQ_PATHV2/gpu_working_opp_table | awk -v freq="$freq" '$0 ~ freq {gsub(/.*, volt: /, ""); gsub(/,.*/, ""); print}')"
     if [ -d "$GPU_FREQ_PATHV2" ]; then
+		lock_val "$GPU_FREQ_PATHV2/fix_custom_freq_volt" "${gpu_freq} ${gpu_volt}"
         lock_val "$GPU_FREQ_PATHV2/aging_mode" "disable"
         for i in $(seq 0 10); do
-            lock_val "$GPU_FREQ_PATHV2/limit_table" "$i 0 0"
+            lock_val "$i 0 0" "$GPU_FREQ_PATHV2/limit_table"
         done
-        lock_val "$GPU_FREQ_PATHV2/limit_table" "1 1 1"
+        lock_val "$GPU_FREQ_PATHV2/limit_table" "3 1 1"
     fi
 }
 
@@ -179,17 +199,17 @@ optimize_pvr_apphint() {
 }
 
 optimize_kgsl_settings() {
-    # Additional kgsl settings to stabilize the gpu
+    # Additional kgsl settings to stabilize the gpu (Matt Yang)（吟惋兮改)
     if [ -d "$KGSL_PARAMS_PATH" ]; then
-        write_val "$KGSL_PARAMS_PATH/max_pwrlevel" "6"
-        write_val "$KGSL_PARAMS_PATH/throttling" "0"
-        write_val "$KGSL_PARAMS_PATH/force_clk_on" "1"
-        write_val "$KGSL_PARAMS_PATH/force_bus_on" "1"
-        write_val "$KGSL_PARAMS_PATH/force_rail_on" "1"
-        write_val "$KGSL_PARAMS_PATH/force_no_nap" "1"
-        write_val "$KGSL_PARAMS_PATH/idle_timer" "50"
-        write_val "$KGSL_PARAMS_PATH/pmqos_active_latency" "500"
-        write_val "$KGSL_PARAMS_PATH/thermal_pwrlevel" "0"
+        MIN_PWRLVL=$(($(cat $KGSL_PARAMS_PATH/num_pwrlevels) - 1))
+        mask_val "$MIN_PWRLVL" "$KGSL_PARAMS_PATH/default_pwrlevel"
+        mask_val "$MIN_PWRLVL" "$KGSL_PARAMS_PATH/min_pwrlevel"
+        mask_val "0" "$KGSL_PARAMS_PATH/thermal_pwrlevel"
+        mask_val "0" "$KGSL_PARAMS_PATH/force_bus_on"
+        mask_val "0" "$KGSL_PARAMS_PATH/force_clk_on"
+        mask_val "0" "$KGSL_PARAMS_PATH/force_no_nap"
+        mask_val "0" "$KGSL_PARAMS_PATH/force_rail_on"
+        mask_val "0" "$KGSL_PARAMS_PATH/throttling"
     fi
 }
 
@@ -238,28 +258,13 @@ optimize_task_cgroup_nice() {
 }
 
 final_optimize_gpu() {
-  # Loop over each GPU in the system
-  for gpu in /sys/kernel/gpu/; do
-	# Fetch the available governors from the GPU
-	avail_govs="$(cat "$gpu/gpu_available_governor")"
-
-	# Attempt to set the governor in this order
-	for governor in msm-adreno-tz userspace powersave performance; do
-	  # Once a matching governor is found, set it and break for this GPU
-      if [[ "$avail_govs" == *"$governor"* ]]; then
-        write_val "$gpu/gpu_governor" "$governor"
-		break
-      fi
-	done
-  done
-  
     # disable pvr tracing
     for pvrtracing in $(find /sys/kernel/debug/tracing/events/pvr_fence -name 'enable'); do
         if [ -d "/sys/kernel/debug/tracing/events/pvr_fence" ]; then
             write_val "$pvrtracing" "0"
         fi
     done
-    
+        
     # disable gpu tracing for mtk
     write_val "$GPUFREQ_TRACING_PATH/enable" "0"
    
