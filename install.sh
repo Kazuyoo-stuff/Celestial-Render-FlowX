@@ -9,7 +9,7 @@ REPLACE="
 
 # array / variabel
 NAME="Celestial-Render-FlowX | Kzyo"
-VERSION="1.2S"
+VERSION="1.3S"
 ANDROIDVERSION=$(getprop ro.build.version.release)
 DATE="Mon 11 Nov 2024"
 DEVICES=$(getprop ro.product.board)
