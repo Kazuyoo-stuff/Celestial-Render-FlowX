@@ -37,7 +37,6 @@ Improved Rendering Speed, Graphics Performance, Device Power Efficiency, cache m
 - Enable Hwc Gpu Perf Mode
 - Fstrim All partitions
 - Delete Trash & Logs
-- Clean gpu shader
 - Other settings
 ```
 
